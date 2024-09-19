@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Image Processing with YOLO</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+      }
+      .image-container {
+        margin-top: 20px;
+      }
+      img {
+        max-width: 100%;
+        max-height: 500px;
+      }
+      .predictions {
+        margin-top: 20px;
+        font-size: 16px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Image Processing with YOLO</h1>
+
+    <!-- File input -->
+    <input type="file" id="imageInput" accept="image/*" />
+
+    <!-- Button to trigger the upload -->
+    <button onclick="processImage()">Process Image</button>
+
+    <!-- Container to display the processed image -->
+    <div class="image-container">
+      <h2>Processed Image:</h2>
+      <img id="processedImage" src="" alt="Processed Image will appear here" />
+    </div>
+
+    <!-- Container to display predictions -->
+    <div class="predictions" id="predictionsContainer"></div>
+
+    <!-- JavaScript to handle the file upload and display -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script>
+      function processImage() {
+        const imageInput = document.getElementById("imageInput");
+        if (imageInput.files.length === 0) {
+          alert("Please select an image first");
+          return;
+        }
+
+        const formData = new FormData();
+        formData.append("file", imageInput.files[0]);
+
+        // Post the image to the FastAPI backend
+        axios
+          .post(
+            "https://pumped-kingfish-partly.ngrok-free.app/process-image/",
+            formData,
+            {
+              headers: {
+                "Content-Type": "multipart/form-data",
+              },
+            }
+          )
+          .then((response) => {
+            const predictions = response.data.predictions;
+            const processedImageUrl =
+              "https://pumped-kingfish-partly.ngrok-free.app" +
+              response.data.processed_image_url;
+
+            console.log(processedImageUrl);
+
+            // Display the processed image
+            const imgElement = document.getElementById("processedImage");
+            imgElement.src = processedImageUrl;
+
+            // Display the predictions
+            const predictionsContainer = document.getElementById(
+              "predictionsContainer"
+            );
+            predictionsContainer.innerHTML = `<h3>Predictions:</h3>`;
+            predictions.forEach((prediction) => {
+              predictionsContainer.innerHTML += `
+                        <p>
+                            <strong>Label:</strong> ${prediction.label}<br>
+                            <strong>Confidence:</strong> ${
+                              prediction.confidence
+                            }<br>
+                            <strong>Bounding Box:</strong> (${prediction.bbox.join(
+                              ", "
+                            )})
+                        </p>
+                    `;
+            });
+          })
+          .catch((error) => {
+            console.error("Error processing image:", error);
+            alert("Failed to process image");
+          });
+      }
+    </script>
+  </body>
+</html>
